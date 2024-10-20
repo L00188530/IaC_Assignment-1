@@ -1,9 +1,24 @@
 Parameters:
-
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names
     Type: String
-
+    AllowedValues:
+      - development
+      - production
+    ConstraintDescription: must be development of production
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair
+Mappings:
+  AWSRegions:
+    us-east-1:
+      HVM64: ami-06b21ccaeff8cd686
+  EnvironmentToInstanceType:
+    development:
+      instanceType: t2.micro
+    production:
+      instanceType: t2.small
 
 Resources:
   VPC:
@@ -37,7 +52,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Public Subnet 1 (AZ1)
+          Value: !Sub ${EnvironmentName} Public Subnet
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -49,7 +64,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Private Subnet 1 (AZ1)
+          Value: !Sub ${EnvironmentName} Private Subnet
 
   NatGateway1EIP:
     Type: AWS::EC2::EIP
@@ -86,7 +101,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName} Private Routes (AZ1)
+          Value: !Sub ${EnvironmentName} Private Routes
   DefaultPrivateRoute1:
     Type: AWS::EC2::Route
     Properties:
