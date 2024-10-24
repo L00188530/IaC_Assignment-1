@@ -211,3 +211,10 @@ Resources:
       SecurityGroupIds:
         - !GetAtt PublicPrivateHostSecGroup.GroupId
       KeyName: !Ref KeyName
+Outputs:
+  PublicInstancePublicIP:
+    Description: Public IP of the Public Instance
+    Value: !GetAtt PublicInstance.PublicIp
+  PrivateInstanceID:
+    Description: Instance ID of the Private Instance
+    Value: !Ref PrivateInstance
