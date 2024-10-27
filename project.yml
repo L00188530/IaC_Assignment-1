@@ -113,22 +113,21 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRouteTable
       SubnetId: !Ref PrivateSubnet
-
   BastionSecGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allows SSH access to jump host
-      GroupName: JumpHost SG
+      GroupName: BastionHost SG
       Tags:
         - Key: Name
-          Value: JumpHost SG
+          Value: BastionHost SG
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
-  PublicPrivateHostSecGroup:
+  PublicHostSecGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow SSH and https access to public Private host
@@ -146,17 +145,30 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
+  PrivateHostSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH from Bastion to Private host
+      GroupName: Private SG
+      Tags:
+        - Key: Name
+          Value: Private SG
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 0
-          ToPort: 65535
-          CidrIp: 0.0.0.0/0
-  JumpHostInstance:
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionSecGroup	
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref PublicHostSecGroup
+  BastionInstance:
     Type: AWS::EC2::Instance
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub Jump Host ${EnvironmentName}
+          Value: !Sub Bastion Host ${EnvironmentName}
         - Key: Environment
           Value: !Sub ${EnvironmentName}
       InstanceType: !FindInMap
@@ -189,7 +201,7 @@ Resources:
         - HVM64
       SubnetId: !Ref PublicSubnet
       SecurityGroupIds:
-        - !GetAtt PublicPrivateHostSecGroup.GroupId
+        - !Ref PublicHostSecGroup
       KeyName: !Ref KeyName
   PrivateInstance:
     Type: AWS::EC2::Instance
@@ -209,9 +221,12 @@ Resources:
         - HVM64
       SubnetId: !Ref PrivateSubnet
       SecurityGroupIds:
-        - !GetAtt PublicPrivateHostSecGroup.GroupId
+        - !Ref PrivateHostSecGroup
       KeyName: !Ref KeyName
 Outputs:
+  BastionInstancePublicIP:
+    Description: Public IP of Bastion Instance
+    Value: !GetAtt BastionInstance.PublicIp
   PublicInstancePublicIP:
     Description: Public IP of the Public Instance
     Value: !GetAtt PublicInstance.PublicIp
